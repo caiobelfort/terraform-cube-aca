@@ -42,7 +42,12 @@ resource "azurerm_container_app" "cube_api" {
       }
 
       dynamic "env" {
-        for_each = local.merged_envs
+        for_each = concat(var.cube_environment_variables,
+          [
+            { name = "CUBEJS_CUBESTORE_HOST", value = local.cubestore_router_name },
+            { name = "CUBEJS_DEV_MODE", value = var.dev_mode},
+          ]
+        )
         content {
           name = env.value.name
           value = env.value.value
