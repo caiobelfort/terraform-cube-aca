@@ -1,0 +1,113 @@
+locals {
+  worker_resources = {
+    small = {
+      cpu    = 2
+      memory = "4Gi"
+    }
+    medium = {
+      cpu    = 4
+      memory = "8Gi"
+    }
+    large = {
+      cpu    = 8
+      memory = "16Gi"
+    }
+  }
+}
+
+resource "azurerm_container_app" "cubestore_worker" {
+  count                        = var.dev_mode ? 0 : var.num_workers
+  name                         = local.worker_names[count.index]
+  resource_group_name          = azurerm_resource_group.this.name
+  container_app_environment_id = azurerm_container_app_environment.this.id
+  revision_mode                = "Single"
+  workload_profile_name        = "Consumption"
+
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.identity.id]
+  }
+
+  registry {
+    server   = local.acr_server
+    identity = azurerm_user_assigned_identity.identity.id
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "worker"
+      image  = local.cubestore_image
+      cpu    = local.worker_resources[var.worker_size].cpu
+      memory = local.worker_resources[var.worker_size].memory
+
+      env {
+        name  = "CUBESTORE_WORKERS"
+        value = local.cubestore_workers_str
+      }
+
+      env {
+        name  = "CUBESTORE_META_ADDR"
+        value = "${local.cubestore_router_name}:9999"
+      }
+
+      env {
+        name  = "CUBESTORE_SERVER_NAME"
+        value = "${local.worker_names[count.index]}:${10001 + count.index}"
+      }
+
+      env {
+        name  = "CUBESTORE_REMOTE_DIR"
+        value = "/cube/data"
+      }
+
+      env {
+        name  = "CUBESTORE_WORKER_PORT"
+        value = 10001 + count.index
+      }
+      env {
+        name  = "CUBESTORE_LOG_LEVEL"
+        value = "trace"
+      }
+    }
+  }
+
+  ingress {
+    external_enabled = false
+    target_port      = 3031
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+}
+
+
+resource "azapi_update_resource" "workers_port_update" {
+  count       = var.dev_mode ? 0 : var.num_workers
+  type        = "Microsoft.App/containerApps@2025-01-01"
+  resource_id = azurerm_container_app.cubestore_worker[count.index].id
+
+  body = {
+    properties = {
+      configuration = {
+        ingress = {
+          additionalPortMappings = [
+            {
+              targetPort  = 10001 + count.index
+              exposedPort = 10001 + count.index
+              external    = false
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
