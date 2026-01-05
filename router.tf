@@ -2,9 +2,10 @@ resource "azurerm_container_app" "router" {
   count = var.dev_mode ? 0 : 1
 
   container_app_environment_id = azurerm_container_app_environment.this.id
-  name                         = "${var.env_prefix}-router-${random_string.suffix}"
+  name                         = "${var.env_prefix}-router-${random_string.suffix.result}"
   resource_group_name          = azurerm_resource_group.this.name
   revision_mode                = "Single"
+  workload_profile_name = "Consumption"
 
   identity {
     type         = "UserAssigned"
@@ -25,6 +26,7 @@ resource "azurerm_container_app" "router" {
       storage_name = azurerm_container_app_environment_storage.env_cube_cache.name
       storage_type = "AzureFile"
     }
+
     container {
       cpu    = 1
       image  = local.cubestore_image
@@ -42,7 +44,7 @@ resource "azurerm_container_app" "router" {
       }
       env {
         name  = "CUBESTORE_META_PORT"
-        value = "9999"
+        value = 9999
       }
       env {
         name  = "CUBESTORE_REMOTE_DIR"
@@ -56,6 +58,10 @@ resource "azurerm_container_app" "router" {
       env {
         name  = "CUBESTORE_LOG_LEVEL"
         value = "trace"
+      }
+      env {
+        name = "CUBESTORE_TELEMETRY"
+        value = "false"
       }
     }
 
@@ -84,14 +90,17 @@ resource "azapi_update_resource" "router_port_update" {
           additionalPortMappings = [
             {
               targetPort = 9999
+              exposedPort = 9999
               external   = false
             },
             {
               targetPort = 3036
+              exposedPort = 3036
               external   = false
             },
             {
               targetPort = 3030
+              exposedPort = 3030
               external   = false
             }
           ]

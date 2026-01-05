@@ -1,16 +1,16 @@
 locals {
   worker_resources = {
     small = {
+      cpu    = 1
+      memory = "2Gi"
+    }
+    medium = {
       cpu    = 2
       memory = "4Gi"
     }
-    medium = {
+    large = {
       cpu    = 4
       memory = "8Gi"
-    }
-    large = {
-      cpu    = 8
-      memory = "16Gi"
     }
   }
 }
@@ -23,6 +23,8 @@ resource "azurerm_container_app" "cubestore_worker" {
   revision_mode                = "Single"
   workload_profile_name        = "Consumption"
 
+  depends_on = [azurerm_container_app.router, azapi_update_resource.router_port_update]
+
   identity {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.identity.id]
@@ -33,15 +35,29 @@ resource "azurerm_container_app" "cubestore_worker" {
     identity = azurerm_user_assigned_identity.identity.id
   }
 
+
   template {
+
+
     min_replicas = 1
     max_replicas = 1
+
+    volume {
+      name = "cube-cache"
+      storage_name = azurerm_container_app_environment_storage.env_cube_cache.name
+      storage_type = "AzureFile"
+    }
 
     container {
       name   = "worker"
       image  = local.cubestore_image
       cpu    = local.worker_resources[var.worker_size].cpu
       memory = local.worker_resources[var.worker_size].memory
+
+      volume_mounts {
+        name = "cube-cache"
+        path = "/cube/data"
+      }
 
       env {
         name  = "CUBESTORE_WORKERS"
@@ -64,12 +80,20 @@ resource "azurerm_container_app" "cubestore_worker" {
       }
 
       env {
+        name  = "CUBESTORE_WORKERS"
+        value = local.cubestore_workers_str
+      }
+      env {
         name  = "CUBESTORE_WORKER_PORT"
         value = 10001 + count.index
       }
       env {
         name  = "CUBESTORE_LOG_LEVEL"
-        value = "trace"
+        value = "info"
+      }
+      env {
+        name = "CUBESTORE_TELEMETRY"
+        value = "false"
       }
     }
   }

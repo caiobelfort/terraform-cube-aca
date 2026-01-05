@@ -64,6 +64,7 @@ variable "cube_environment_variables" {
   }))
   description = "List of environment variables to set for the deployment"
   default     = []
+  sensitive = true
 }
 
 variable "acr_name" {

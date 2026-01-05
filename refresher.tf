@@ -17,15 +17,20 @@ resource "azurerm_container_app" "refresher" {
     identity = azurerm_user_assigned_identity.identity.id
   }
 
+
+
   template {
     min_replicas = 1
     max_replicas = 1
+
+    revision_suffix = local.revision_suffix
 
     volume {
       name         = "cube-conf"
       storage_name = azurerm_container_app_environment_storage.env_cube_conf.name
       storage_type = "AzureFile"
     }
+
     container {
       cpu    = 2
       image  = local.cube_image

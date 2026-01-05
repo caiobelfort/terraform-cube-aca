@@ -62,21 +62,10 @@ locals {
   cubestore_router_name = "${var.env_prefix}-router-${random_string.suffix.result}"
   worker_names = [
     for i in range(var.num_workers) :
-    "${var.env_prefix}-worker-${i}-${random_string.suffix.result}"
+    "${var.env_prefix}-worker-${i+1}-${random_string.suffix.result}"
   ]
   cubestore_workers_str = join(",", [for i in range(var.num_workers) : "${local.worker_names[i]}:${10001 + i}"])
-  merged_envs = concat(
-    var.cube_environment_variables, [
-      {
-        name = "CUBEJS_DEV_MODE"
-        value = var.dev_mode
-      },
-      {
-        name = "CUBEJS_CUBESTORE_HOST"
-        value = local.cubestore_router_name
-      }
-    ]
-  )
+  revision_suffix = formatdate("YYYYMMDDhhmmss", timestamp())
 }
 
 

@@ -8,6 +8,8 @@ resource "azurerm_container_app" "cube_api" {
   revision_mode                = "Single"
   workload_profile_name = "Consumption"
 
+  depends_on = [azurerm_container_app.router, azurerm_container_app.refresher, azurerm_container_app.cubestore_worker]
+
 
   identity {
     type         = "UserAssigned"
@@ -20,6 +22,7 @@ resource "azurerm_container_app" "cube_api" {
   }
 
   template {
+    revision_suffix = local.revision_suffix
 
     min_replicas = 1
     max_replicas = 2
