@@ -11,18 +11,11 @@ terraform {
     }
     time = {
       source  = "hashicorp/time"
-      version = "0.13.1"
+      version = ">=0.13.1"
     }
   }
 }
 
-provider "azurerm" {
-  features {}
-  subscription_id = var.subscription_id
-}
 
-provider "azapi" {
-
-}
 
 
