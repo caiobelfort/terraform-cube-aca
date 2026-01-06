@@ -2,14 +2,13 @@
 
 
 resource "azurerm_container_app" "cube_api" {
-  name                         = "${var.env_prefix}-api-${random_string.suffix.result}"
+  name                         = "cube-api"
   resource_group_name          = azurerm_resource_group.this.name
   container_app_environment_id = azurerm_container_app_environment.this.id
   revision_mode                = "Single"
-  workload_profile_name = "Consumption"
 
-  depends_on = [azurerm_container_app.router, azurerm_container_app.refresher, azurerm_container_app.cubestore_worker]
 
+  depends_on = [azurerm_container_app.refresher, azurerm_container_app.cubestore_worker]
 
   identity {
     type         = "UserAssigned"
@@ -22,7 +21,6 @@ resource "azurerm_container_app" "cube_api" {
   }
 
   template {
-    revision_suffix = local.revision_suffix
 
     min_replicas = 1
     max_replicas = 2
@@ -47,8 +45,9 @@ resource "azurerm_container_app" "cube_api" {
       dynamic "env" {
         for_each = concat(var.cube_environment_variables,
           [
-            { name = "CUBEJS_CUBESTORE_HOST", value = local.cubestore_router_name },
+            { name = "CUBEJS_CUBESTORE_HOST", value = local.router_name },
             { name = "CUBEJS_DEV_MODE", value = var.dev_mode},
+            { name = "VERSION", value = local.env_version}
           ]
         )
         content {

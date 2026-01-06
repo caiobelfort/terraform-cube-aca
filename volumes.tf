@@ -16,8 +16,6 @@ resource "azurerm_storage_share" "conf_share" {
   storage_account_id = azurerm_storage_account.this.id
   quota = 20
 
-
-
 }
 
 resource "azurerm_storage_share" "cache_share" {

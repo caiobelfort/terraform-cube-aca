@@ -2,10 +2,9 @@ resource "azurerm_container_app" "refresher" {
   count = var.dev_mode ? 0 : 1
 
   container_app_environment_id = azurerm_container_app_environment.this.id
-  name                         = "${var.env_prefix}-refresher-${random_string.suffix.result}"
+  name                         = "cube-refresh-worker"
   resource_group_name          = azurerm_resource_group.this.name
   revision_mode                = "Single"
-  workload_profile_name        = "Consumption"
 
   identity {
     type         = "UserAssigned"
@@ -23,7 +22,6 @@ resource "azurerm_container_app" "refresher" {
     min_replicas = 1
     max_replicas = 1
 
-    revision_suffix = local.revision_suffix
 
     volume {
       name         = "cube-conf"
@@ -47,7 +45,8 @@ resource "azurerm_container_app" "refresher" {
         for_each = concat(var.cube_environment_variables,
           [
             { name = "CUBEJS_REFRESH_WORKER", value = true},
-            { name = "CUBEJS_CUBESTORE_HOST", value = local.cubestore_router_name}
+            { name = "CUBEJS_CUBESTORE_HOST", value = local.router_name},
+            { name = "VERSION", value = local.env_version}
           ])
         content {
           name  = env.value.name

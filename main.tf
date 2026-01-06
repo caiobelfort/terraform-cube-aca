@@ -24,19 +24,13 @@ resource "azurerm_log_analytics_workspace" "this" {
   retention_in_days = 30
 }
 
+
+
 resource "azurerm_container_app_environment" "this" {
   name = "${var.env_prefix}-environment-${random_string.suffix.result}"
   location = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
-
-  workload_profile {
-    minimum_count = 0
-    maximum_count = 0
-    name                  = "Consumption"
-    workload_profile_type = "Consumption"
-  }
-
 }
 
 # Creates an identity to setup the container app to access the ACR
@@ -59,13 +53,16 @@ locals {
   acr_server      = data.azurerm_container_registry.acr.login_server
   cubestore_image = "${local.acr_server}/${var.cubestore_image}"
   cube_image      = "${local.acr_server}/${var.cube_image}"
-  cubestore_router_name = "${var.env_prefix}-router-${random_string.suffix.result}"
+  router_name = "cubestore-router"
   worker_names = [
     for i in range(var.num_workers) :
-    "${var.env_prefix}-worker-${i+1}-${random_string.suffix.result}"
+    "cubestore-worker-${i+1}"
   ]
-  cubestore_workers_str = join(",", [for i in range(var.num_workers) : "${local.worker_names[i]}:${10001 + i}"])
-  revision_suffix = formatdate("YYYYMMDDhhmmss", timestamp())
+  workers_str = join(",", [for i in range(var.num_workers) : "${local.worker_names[i]}:${10001 + i}"])
+  cache_remote_dir = "/cube/data"
+
+  env_version = formatdate("YYYYMMDDhhmmss", timestamp())
+
 }
 
 

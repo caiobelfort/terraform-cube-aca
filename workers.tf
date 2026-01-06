@@ -15,15 +15,20 @@ locals {
   }
 }
 
+resource "time_sleep" "wait_60_seconds" {
+  depends_on = [azurerm_container_app.router, azapi_update_resource.router_port_update]
+  create_duration = "60s"
+}
+
+
 resource "azurerm_container_app" "cubestore_worker" {
   count                        = var.dev_mode ? 0 : var.num_workers
   name                         = local.worker_names[count.index]
   resource_group_name          = azurerm_resource_group.this.name
   container_app_environment_id = azurerm_container_app_environment.this.id
   revision_mode                = "Single"
-  workload_profile_name        = "Consumption"
 
-  depends_on = [azurerm_container_app.router, azapi_update_resource.router_port_update]
+  depends_on = [time_sleep.wait_60_seconds]
 
   identity {
     type         = "UserAssigned"
@@ -37,7 +42,6 @@ resource "azurerm_container_app" "cubestore_worker" {
 
 
   template {
-
 
     min_replicas = 1
     max_replicas = 1
@@ -56,17 +60,12 @@ resource "azurerm_container_app" "cubestore_worker" {
 
       volume_mounts {
         name = "cube-cache"
-        path = "/cube/data"
-      }
-
-      env {
-        name  = "CUBESTORE_WORKERS"
-        value = local.cubestore_workers_str
+        path = local.cache_remote_dir
       }
 
       env {
         name  = "CUBESTORE_META_ADDR"
-        value = "${local.cubestore_router_name}:9999"
+        value = "${local.router_name}:9999"
       }
 
       env {
@@ -76,12 +75,12 @@ resource "azurerm_container_app" "cubestore_worker" {
 
       env {
         name  = "CUBESTORE_REMOTE_DIR"
-        value = "/cube/data"
+        value = local.cache_remote_dir
       }
 
       env {
         name  = "CUBESTORE_WORKERS"
-        value = local.cubestore_workers_str
+        value = local.workers_str
       }
       env {
         name  = "CUBESTORE_WORKER_PORT"
@@ -89,11 +88,15 @@ resource "azurerm_container_app" "cubestore_worker" {
       }
       env {
         name  = "CUBESTORE_LOG_LEVEL"
-        value = "info"
+        value = "trace"
       }
       env {
         name = "CUBESTORE_TELEMETRY"
         value = "false"
+      }
+      env {
+        name = "VERSION"
+        value = local.env_version
       }
     }
   }

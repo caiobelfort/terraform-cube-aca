@@ -2,10 +2,9 @@ resource "azurerm_container_app" "router" {
   count = var.dev_mode ? 0 : 1
 
   container_app_environment_id = azurerm_container_app_environment.this.id
-  name                         = "${var.env_prefix}-router-${random_string.suffix.result}"
+  name                         = local.router_name
   resource_group_name          = azurerm_resource_group.this.name
   revision_mode                = "Single"
-  workload_profile_name = "Consumption"
 
   identity {
     type         = "UserAssigned"
@@ -19,7 +18,7 @@ resource "azurerm_container_app" "router" {
 
   template {
     min_replicas = 1
-    max_replicas = 2
+    max_replicas = 1
 
     volume {
       name         = "cube-cache"
@@ -28,19 +27,19 @@ resource "azurerm_container_app" "router" {
     }
 
     container {
-      cpu    = 1
+      cpu    = 2
       image  = local.cubestore_image
-      memory = "2Gi"
-      name   = local.cubestore_router_name
+      memory = "4Gi"
+      name   = local.router_name
 
       volume_mounts {
         name = "cube-cache"
-        path = "/cube/data"
+        path = local.cache_remote_dir
       }
 
       env {
         name  = "CUBESTORE_SERVER_NAME"
-        value = "${local.cubestore_router_name}:9999"
+        value = "${local.router_name}:9999"
       }
       env {
         name  = "CUBESTORE_META_PORT"
@@ -48,11 +47,11 @@ resource "azurerm_container_app" "router" {
       }
       env {
         name  = "CUBESTORE_REMOTE_DIR"
-        value = "/cube/data"
+        value = local.cache_remote_dir
       }
       env {
         name  = "CUBESTORE_WORKERS"
-        value = local.cubestore_workers_str
+        value = local.workers_str
       }
 
       env {
@@ -62,6 +61,11 @@ resource "azurerm_container_app" "router" {
       env {
         name = "CUBESTORE_TELEMETRY"
         value = "false"
+      }
+
+      env {
+        name = "VERSION"
+        value = local.env_version
       }
     }
 
