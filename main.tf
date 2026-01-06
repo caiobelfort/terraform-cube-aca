@@ -31,6 +31,12 @@ resource "azurerm_container_app_environment" "this" {
   location = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
+
+  workload_profile {
+    name                  = "Consumption"
+    workload_profile_type = "Consumption"
+  }
+
 }
 
 # Creates an identity to setup the container app to access the ACR
