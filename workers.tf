@@ -27,7 +27,6 @@ resource "azurerm_container_app" "cubestore_worker" {
   resource_group_name          = azurerm_resource_group.this.name
   container_app_environment_id = azurerm_container_app_environment.this.id
   revision_mode                = "Single"
-
   depends_on = [time_sleep.wait_60_seconds]
 
   identity {
@@ -98,12 +97,19 @@ resource "azurerm_container_app" "cubestore_worker" {
         name = "VERSION"
         value = local.env_version
       }
+
+       env {
+        name = "NODE_OPTIONS"
+        value = "--max-old-space-size=6144"
+      }
     }
   }
 
   ingress {
     external_enabled = false
-    target_port      = 3031
+    transport = "tcp"
+    target_port      = 10001 + count.index
+    exposed_port = 10001 + count.index
     traffic_weight {
       latest_revision = true
       percentage      = 100
@@ -123,8 +129,8 @@ resource "azapi_update_resource" "workers_port_update" {
         ingress = {
           additionalPortMappings = [
             {
-              targetPort  = 10001 + count.index
-              exposedPort = 10001 + count.index
+              targetPort  = 3031
+              exposedPort = 3031
               external    = false
             }
           ]

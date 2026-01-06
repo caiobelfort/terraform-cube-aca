@@ -5,7 +5,6 @@ resource "azurerm_container_app" "router" {
   name                         = local.router_name
   resource_group_name          = azurerm_resource_group.this.name
   revision_mode                = "Single"
-
   identity {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.identity.id]
@@ -43,7 +42,7 @@ resource "azurerm_container_app" "router" {
       }
       env {
         name  = "CUBESTORE_META_PORT"
-        value = 9999
+        value = "9999"
       }
       env {
         name  = "CUBESTORE_REMOTE_DIR"
@@ -67,13 +66,20 @@ resource "azurerm_container_app" "router" {
         name = "VERSION"
         value = local.env_version
       }
+
+      env {
+        name = "NODE_OPTIONS"
+        value = "--max-old-space-size=6144"
+      }
     }
 
   }
 
   ingress {
     external_enabled = false
-    target_port      = 3031
+    target_port      = 9999
+    exposed_port = 9999
+    transport = "tcp"
     traffic_weight {
       latest_revision = true
       percentage      = 100
@@ -93,8 +99,8 @@ resource "azapi_update_resource" "router_port_update" {
         ingress = {
           additionalPortMappings = [
             {
-              targetPort = 9999
-              exposedPort = 9999
+              targetPort = 3031
+              exposedPort = 3031
               external   = false
             },
             {

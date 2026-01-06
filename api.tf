@@ -7,7 +7,6 @@ resource "azurerm_container_app" "cube_api" {
   container_app_environment_id = azurerm_container_app_environment.this.id
   revision_mode                = "Single"
 
-
   depends_on = [azurerm_container_app.refresher, azurerm_container_app.cubestore_worker]
 
   identity {
@@ -19,6 +18,8 @@ resource "azurerm_container_app" "cube_api" {
     server   = local.acr_server
     identity = azurerm_user_assigned_identity.identity.id
   }
+
+
 
   template {
 
@@ -36,6 +37,8 @@ resource "azurerm_container_app" "cube_api" {
       image  = local.cube_image
       cpu    = 1
       memory = "2Gi"
+
+
 
       volume_mounts {
         name = "cube-conf"

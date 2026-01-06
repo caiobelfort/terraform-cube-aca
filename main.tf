@@ -53,10 +53,10 @@ locals {
   acr_server      = data.azurerm_container_registry.acr.login_server
   cubestore_image = "${local.acr_server}/${var.cubestore_image}"
   cube_image      = "${local.acr_server}/${var.cube_image}"
-  router_name = "cubestore-router"
+  router_name = "cubestorerouter"
   worker_names = [
     for i in range(var.num_workers) :
-    "cubestore-worker-${i+1}"
+    "cubestoreworker${i+1}"
   ]
   workers_str = join(",", [for i in range(var.num_workers) : "${local.worker_names[i]}:${10001 + i}"])
   cache_remote_dir = "/cube/data"
