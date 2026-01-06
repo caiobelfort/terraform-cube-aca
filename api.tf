@@ -65,7 +65,7 @@ resource "azurerm_container_app" "cube_api" {
   ingress {
     target_port      = 4000
     external_enabled = true
-    allow_insecure_connections = false
+      allow_insecure_connections = false
 
     dynamic "ip_security_restriction" {
       for_each = var.allowed_ips

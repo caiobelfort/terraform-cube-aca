@@ -77,9 +77,8 @@ resource "azurerm_container_app" "router" {
 
   ingress {
     external_enabled = false
-    target_port      = 9999
-    exposed_port = 9999
-    transport = "tcp"
+    target_port      = 3031
+    allow_insecure_connections = false
     traffic_weight {
       latest_revision = true
       percentage      = 100
@@ -99,8 +98,8 @@ resource "azapi_update_resource" "router_port_update" {
         ingress = {
           additionalPortMappings = [
             {
-              targetPort = 3031
-              exposedPort = 3031
+              targetPort = 3030
+              exposedPort = 3030
               external   = false
             },
             {
@@ -109,8 +108,8 @@ resource "azapi_update_resource" "router_port_update" {
               external   = false
             },
             {
-              targetPort = 3030
-              exposedPort = 3030
+              targetPort = 9999
+              exposedPort = 9999
               external   = false
             }
           ]

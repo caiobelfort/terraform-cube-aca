@@ -107,9 +107,7 @@ resource "azurerm_container_app" "cubestore_worker" {
 
   ingress {
     external_enabled = false
-    transport = "tcp"
-    target_port      = 10001 + count.index
-    exposed_port = 10001 + count.index
+    target_port      = 10001
     traffic_weight {
       latest_revision = true
       percentage      = 100
@@ -118,27 +116,7 @@ resource "azurerm_container_app" "cubestore_worker" {
 }
 
 
-resource "azapi_update_resource" "workers_port_update" {
-  count       = var.dev_mode ? 0 : var.num_workers
-  type        = "Microsoft.App/containerApps@2025-01-01"
-  resource_id = azurerm_container_app.cubestore_worker[count.index].id
 
-  body = {
-    properties = {
-      configuration = {
-        ingress = {
-          additionalPortMappings = [
-            {
-              targetPort  = 3031
-              exposedPort = 3031
-              external    = false
-            }
-          ]
-        }
-      }
-    }
-  }
-}
 
 
 
