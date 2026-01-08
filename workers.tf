@@ -52,7 +52,7 @@ resource "azurerm_container_app" "cubestore_worker" {
     }
 
     container {
-      name   = "worker"
+      name   = local.worker_names[count.index]
       image  = local.cubestore_image
       cpu    = local.worker_resources[var.worker_size].cpu
       memory = local.worker_resources[var.worker_size].memory
@@ -107,7 +107,9 @@ resource "azurerm_container_app" "cubestore_worker" {
 
   ingress {
     external_enabled = false
-    target_port      = 10001
+    target_port      = 10001 + count.index
+    exposed_port = 10001 + count.index
+    transport = "tcp"
     traffic_weight {
       latest_revision = true
       percentage      = 100
@@ -115,6 +117,27 @@ resource "azurerm_container_app" "cubestore_worker" {
   }
 }
 
+resource "azapi_update_resource" "workers_port_update" {
+  count       = var.dev_mode ? 0 : var.num_workers
+  type        = "Microsoft.App/containerApps@2025-01-01"
+  resource_id = azurerm_container_app.cubestore_worker[count.index].id
+
+  body = {
+    properties = {
+      configuration = {
+        ingress = {
+          additionalPortMappings = [
+            {
+              targetPort  = 3031
+              exposedPort = 3031
+              external    = false
+            }
+          ]
+        }
+      }
+    }
+  }
+}
 
 
 
