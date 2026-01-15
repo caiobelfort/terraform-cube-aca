@@ -87,7 +87,7 @@ resource "azurerm_container_app" "cubestore_worker" {
       }
       env {
         name  = "CUBESTORE_LOG_LEVEL"
-        value = "trace"
+        value = var.cubestore_log_level
       }
       env {
         name = "CUBESTORE_TELEMETRY"

@@ -96,4 +96,9 @@ variable "subnet_address_prefixes" {
   default = ["10.0.0.0/21"]
 }
 
+variable "cubestore_log_level" {
+  type = string
+  default = "info"
+}
+
 
