@@ -6,14 +6,41 @@ resource "azurerm_container_app" "refresher" {
   resource_group_name          = azurerm_resource_group.this.name
   revision_mode                = "Single"
 
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.identity.id]
+  # Use managed identity for ACR pull when not using Service Principal
+  dynamic "identity" {
+    for_each = local.use_sp ? [] : [1]
+    content {
+      type         = "UserAssigned"
+      identity_ids = [azurerm_user_assigned_identity.identity[0].id]
+    }
   }
 
-  registry {
-    server   = local.acr_server
-    identity = azurerm_user_assigned_identity.identity.id
+  # Store SP secret for ACR authentication
+  dynamic "secret" {
+    for_each = local.use_sp && var.sp_secret != null ? [1] : []
+    content {
+      name  = "acr-password"
+      value = var.sp_secret
+    }
+  }
+
+  # ACR registry auth via managed identity
+  dynamic "registry" {
+    for_each = local.use_sp ? [] : [1]
+    content {
+      server   = local.acr_server
+      identity = azurerm_user_assigned_identity.identity[0].id
+    }
+  }
+
+  # ACR registry auth via Service Principal credentials
+  dynamic "registry" {
+    for_each = local.use_sp ? [1] : []
+    content {
+      server               = local.acr_server
+      username             = var.sp_id
+      password_secret_name = "acr-password"
+    }
   }
 
 

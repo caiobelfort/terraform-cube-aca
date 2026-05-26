@@ -27,8 +27,8 @@ variable "cube_api_scale" {
   }
 }
 
-variable env_prefix {
-  type = string
+variable "env_prefix" {
+  type    = string
   default = "cube"
 }
 
@@ -49,9 +49,9 @@ variable "cubestore_image" {
   type = string
 }
 
-variable allowed_ips {
+variable "allowed_ips" {
   type = list(object({
-    name = string
+    name  = string
     value = string
   }))
 }
@@ -64,11 +64,11 @@ variable "cube_environment_variables" {
   }))
   description = "List of environment variables to set for the deployment"
   default     = []
-  sensitive = true
+  sensitive   = true
 }
 
 variable "acr_name" {
-  type = string
+  type        = string
   description = "The Azure Container Registry name to pull images"
 }
 
@@ -82,7 +82,7 @@ variable "cube_files_dir" {
 }
 
 variable "dev_mode" {
-  type = bool
+  type    = bool
   default = false
 }
 
@@ -97,8 +97,28 @@ variable "subnet_address_prefixes" {
 }
 
 variable "cubestore_log_level" {
-  type = string
+  type    = string
   default = "info"
 }
 
+variable "identity_type" {
+  type = string
+  validation {
+    condition     = contains(["SystemIdentity", "ServicePrincipal"], var.identity_type)
+    error_message = "Must be SystemIdentity or ServicePrincipal"
+  }
+}
 
+
+variable "sp_id" {
+  type        = string
+  default     = null
+  description = "If identity_type = 'ServicePrincipal' the Service Principal Application Id must be passed"
+}
+
+variable "sp_secret" {
+  type        = string
+  default     = null
+  sensitive   = true
+  description = "If identity_type = 'ServicePrincipal' the Service Principal Secret Key must be passed"
+}

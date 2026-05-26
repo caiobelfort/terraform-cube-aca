@@ -5,14 +5,41 @@ resource "azurerm_container_app" "router" {
   name                         = local.router_name
   resource_group_name          = azurerm_resource_group.this.name
   revision_mode                = "Single"
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.identity.id]
+  # Use managed identity for ACR pull when not using Service Principal
+  dynamic "identity" {
+    for_each = local.use_sp ? [] : [1]
+    content {
+      type         = "UserAssigned"
+      identity_ids = [azurerm_user_assigned_identity.identity[0].id]
+    }
   }
 
-  registry {
-    server   = local.acr_server
-    identity = azurerm_user_assigned_identity.identity.id
+  # Store SP secret for ACR authentication
+  dynamic "secret" {
+    for_each = local.use_sp && var.sp_secret != null ? [1] : []
+    content {
+      name  = "acr-password"
+      value = var.sp_secret
+    }
+  }
+
+  # ACR registry auth via managed identity
+  dynamic "registry" {
+    for_each = local.use_sp ? [] : [1]
+    content {
+      server   = local.acr_server
+      identity = azurerm_user_assigned_identity.identity[0].id
+    }
+  }
+
+  # ACR registry auth via Service Principal credentials
+  dynamic "registry" {
+    for_each = local.use_sp ? [1] : []
+    content {
+      server               = local.acr_server
+      username             = var.sp_id
+      password_secret_name = "acr-password"
+    }
   }
 
   template {
@@ -96,22 +123,29 @@ resource "azapi_update_resource" "router_port_update" {
   body = {
     properties = {
       configuration = {
+        # Re-supply the secret so azapi's GET+PUT cycle doesn't lose the value
+        secrets = local.use_sp ? [
+          {
+            name  = "acr-password"
+            value = var.sp_secret
+          }
+        ] : []
         ingress = {
           additionalPortMappings = [
             {
-              targetPort = 3030
+              targetPort  = 3030
               exposedPort = 3030
-              external   = false
+              external    = false
             },
             {
-              targetPort = 3036
+              targetPort  = 3036
               exposedPort = 3036
-              external   = false
+              external    = false
             },
             {
-              targetPort = 3031
+              targetPort  = 3031
               exposedPort = 3031
-              external   = false
+              external    = false
             }
           ]
         }

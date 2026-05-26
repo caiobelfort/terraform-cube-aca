@@ -1,0 +1,28 @@
+cubes:
+  - name: orders
+    sql: |
+      SELECT 1 AS id, 'processing' AS status UNION ALL
+      SELECT 2 AS id, 'completed'  AS status UNION ALL
+      SELECT 3 AS id, 'completed'  AS status
+
+    measures:
+      - name: count
+        type: count
+
+      - name: completed_count
+        type: count
+        filters:
+          - sql: "{CUBE}.status = 'completed'"
+
+      - name: completed_ratio
+        sql: "1.0 * {completed_count} / {count}"
+        type: number
+
+    pre_aggregations:
+      - name: _count
+        measures:
+          - count
+          - completed_count
+          - completed_ratio
+        refresh_key:
+          every: 1 day
