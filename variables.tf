@@ -32,6 +32,11 @@ variable "env_prefix" {
   default = "cube"
 }
 
+variable "suffix" {
+  type        = string
+  description = "Unique suffix appended to resource names. Generate it outside the module (e.g. with random_string) and pass it in."
+}
+
 variable "subscription_id" {
   type = string
 }
@@ -81,6 +86,12 @@ variable "cube_files_dir" {
   type = string
 }
 
+variable "cube_cache_size" {
+  type        = number
+  default     = 100
+  description = "Size in GiB of the cube-cache file share used by Cube Store"
+}
+
 variable "dev_mode" {
   type    = bool
   default = false
@@ -102,7 +113,8 @@ variable "cubestore_log_level" {
 }
 
 variable "identity_type" {
-  type = string
+  type    = string
+  default = "SystemIdentity"
   validation {
     condition     = contains(["SystemIdentity", "ServicePrincipal"], var.identity_type)
     error_message = "Must be SystemIdentity or ServicePrincipal"

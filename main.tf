@@ -5,19 +5,13 @@ data "azurerm_container_registry" "acr" {
   resource_group_name = var.acr_resource_group_name
 }
 
-resource "random_string" "suffix" {
-  length  = 8
-  special = false
-  upper   = false
-}
-
 resource "azurerm_resource_group" "this" {
   location = var.location
-  name     = "${var.env_prefix}-rg-${var.location}-${random_string.suffix.result}"
+  name     = "${var.env_prefix}-rg-${var.location}-${var.suffix}"
 }
 
 resource "azurerm_log_analytics_workspace" "this" {
-  name                = "${var.env_prefix}-logs-${random_string.suffix.result}"
+  name                = "${var.env_prefix}-logs-${var.suffix}"
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
   sku                 = "PerGB2018"
@@ -27,7 +21,7 @@ resource "azurerm_log_analytics_workspace" "this" {
 
 
 resource "azurerm_container_app_environment" "this" {
-  name                       = "${var.env_prefix}-environment-${random_string.suffix.result}"
+  name                       = "${var.env_prefix}-environment-${var.suffix}"
   location                   = azurerm_resource_group.this.location
   resource_group_name        = azurerm_resource_group.this.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
@@ -43,17 +37,20 @@ resource "azurerm_container_app_environment" "this" {
 
 # Creates an identity to setup the container app to access the ACR if identity type is 'SystemAssigned'
 resource "azurerm_user_assigned_identity" "identity" {
-  
-  name                = "${var.env_prefix}-indentity-${random_string.suffix.result}"
+  count = local.use_sp ? 0 : 1
+
+  name                = "${var.env_prefix}-indentity-${var.suffix}"
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 }
 
 # Setups a role if identity type is 'SystemAssigned'
 resource "azurerm_role_assignment" "acr_permission" {
+  count = local.use_sp ? 0 : 1
+
   scope                = data.azurerm_container_registry.acr.id
   role_definition_name = "AcrPull"
-  principal_id         = azurerm_user_assigned_identity.identity.principal_id
+  principal_id         = azurerm_user_assigned_identity.identity[0].principal_id
 
   depends_on = [azurerm_user_assigned_identity.identity]
 
@@ -73,4 +70,5 @@ locals {
 
   env_version = formatdate("YYYYMMDDhhmmss", timestamp())
 
+  use_sp = var.identity_type == "ServicePrincipal"
 }

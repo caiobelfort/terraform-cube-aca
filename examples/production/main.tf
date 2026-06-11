@@ -9,6 +9,11 @@ terraform {
       source  = "Azure/azapi"
       version = ">=2.8.0"
     }
+
+    random = {
+      source  = "hashicorp/random"
+      version = ">=3.0.0"
+    }
   }
 }
 provider "azurerm" {
@@ -23,11 +28,17 @@ provider "azurerm" {
 
 provider "azapi" {}
 
+resource "random_string" "suffix" {
+  length  = 8
+  special = false
+  upper   = false
+}
 
 module "cube" {
   source = "../.."
   subscription_id = var.subscription_id
   env_prefix = "cubeprod"
+  suffix = random_string.suffix.result
   acr_name                = var.acr_name
   acr_resource_group_name = var.acr_resource_group_name
   allowed_ips = var.allowed_ips

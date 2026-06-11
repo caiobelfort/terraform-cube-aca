@@ -3,7 +3,7 @@
 
 
 resource "azurerm_storage_account" "this" {
-  name = "${var.env_prefix}storage${random_string.suffix.result}"
+  name = "${var.env_prefix}storage${var.suffix}"
   resource_group_name = azurerm_resource_group.this.name
   location = azurerm_resource_group.this.location
   account_tier = "Standard"
@@ -21,7 +21,7 @@ resource "azurerm_storage_share" "conf_share" {
 resource "azurerm_storage_share" "cache_share" {
   name = "${var.env_prefix}-cache-share"
   storage_account_id = azurerm_storage_account.this.id
-  quota = 100
+  quota = var.cube_cache_size
 }
 
 
